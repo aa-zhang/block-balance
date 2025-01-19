@@ -7,7 +7,8 @@ public class DragAndDrop : MonoBehaviour
     private Plane xzPlane; // XZ plane with same Y value as the cursor hit point
     private Rigidbody rb;
     private int blockLayer;
-    private bool isBlockFree = false;
+    private bool isColliding = false;
+    private bool isHeld = false;
 
     [SerializeField] private float forceStrength = 10f;
     [SerializeField] private float stopThreshold = 5f;
@@ -65,15 +66,15 @@ public class DragAndDrop : MonoBehaviour
     private void MoveBlockTowardsCursor(Vector3 hitPoint)
     {
         // Use two different methods to move block towards the cursor
-        if (isBlockFree)
-        {
-            // Use lerp when block is free - prevents block from overshooting the cursor
-            LerpBlockToCursor(hitPoint);
-        }
-        else
+        if (isColliding)
         {
             // Use force when block is colliding - simulates force interactions
             ApplyForce(hitPoint);
+        }
+        else
+        {
+            // Use lerp when block is free - prevents block from overshooting the cursor
+            LerpBlockToCursor(hitPoint);
         }
     }
 
@@ -104,6 +105,7 @@ public class DragAndDrop : MonoBehaviour
         rb.mass = 1;
         rb.velocity = Vector3.zero;
         rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotation;
+        isHeld = true;
         OnBlockHold?.Invoke();
     }
 
@@ -112,6 +114,7 @@ public class DragAndDrop : MonoBehaviour
         rb.useGravity = true;
         rb.mass = 1;
         rb.constraints = RigidbodyConstraints.None;
+        isHeld = false;
         OnBlockRelease?.Invoke();
     }
 
@@ -119,7 +122,7 @@ public class DragAndDrop : MonoBehaviour
     {
         if (collision.gameObject.layer == LayerMask.NameToLayer("Block"))
         {
-            isBlockFree = false;
+            isColliding = true;
         }
     }
 
@@ -127,8 +130,13 @@ public class DragAndDrop : MonoBehaviour
     {
         if (collision.gameObject.layer == LayerMask.NameToLayer("Block"))
         {
-            isBlockFree = true;
-            rb.velocity = Vector3.zero;
+            isColliding = false;
+
+            // Reset block velocity once it has been removed (prevents overshooting cursor)
+            if (isHeld)
+            {
+                rb.velocity = Vector3.zero;
+            }
         }
     }
 }

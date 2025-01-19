@@ -20,27 +20,32 @@ public class CursorManager : MonoBehaviour
         Cursor.SetCursor(openHandCursorTexture, openHandCursorCenter, CursorMode.Auto);
     }
 
-    private void OnEnable()
-    {
-        DragAndDrop.OnBlockHold += HandleBlockHold;
-        DragAndDrop.OnBlockRelease += HandleBlockRelease;
-    }
+    //private void OnEnable()
+    //{
+    //    DragAndDrop.OnBlockHold += HandleBlockHold;
+    //    DragAndDrop.OnBlockRelease += HandleBlockRelease;
+    //}
 
-    private void OnDisable()
-    {
-        DragAndDrop.OnBlockHold -= HandleBlockHold;
-        DragAndDrop.OnBlockRelease -= HandleBlockRelease;
-    }
+    //private void OnDisable()
+    //{
+    //    DragAndDrop.OnBlockHold -= HandleBlockHold;
+    //    DragAndDrop.OnBlockRelease -= HandleBlockRelease;
+    //}
 
 
-    private void HandleBlockHold()
+    private void Update()
     {
-        Cursor.SetCursor(closedHandCursorTexture, closedHandCursorCenter, CursorMode.Auto);
-    }
+        // Detect when the left mouse button is pressed down
+        if (Input.GetMouseButtonDown(0))
+        {
+            Cursor.SetCursor(closedHandCursorTexture, closedHandCursorCenter, CursorMode.Auto);
+        }
 
-    private void HandleBlockRelease()
-    {
-        Cursor.SetCursor(openHandCursorTexture, openHandCursorCenter, CursorMode.Auto);
+        // Detect when the left mouse button is released
+        if (Input.GetMouseButtonUp(0))
+        {
+            Cursor.SetCursor(openHandCursorTexture, openHandCursorCenter, CursorMode.Auto);
+        }
     }
 
 
