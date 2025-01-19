@@ -6,7 +6,13 @@ public class DragAndDrop : MonoBehaviour
     private Vector3 mouseOffset; // Offset between the mouse position and the object's center
     private Plane xzPlane; // XZ plane with same Y value as the cursor hit point
     private Rigidbody rb;
+    private int blockLayer;
+    private bool isBlockFree = false;
 
+    [SerializeField] private float forceStrength = 10f;
+    [SerializeField] private float stopThreshold = 5f;
+    [SerializeField] private float lerpSpeed = 10f;
+    
 
     public delegate void BlockHoldHandler();
     public static BlockHoldHandler OnBlockHold;
@@ -19,7 +25,7 @@ public class DragAndDrop : MonoBehaviour
     {
         mainCamera = Camera.main;
         rb = GetComponent<Rigidbody>(); // Get the Rigidbody component
-
+        blockLayer = LayerMask.NameToLayer("Block");
     }
 
     void OnMouseDown()
@@ -47,7 +53,7 @@ public class DragAndDrop : MonoBehaviour
         if (xzPlane.Raycast(ray, out float enter))
         {
             Vector3 hitPoint = ray.GetPoint(enter);
-            transform.position = hitPoint + mouseOffset;
+            MoveBlockTowardsCursor(hitPoint);
         }
     }
 
@@ -56,13 +62,48 @@ public class DragAndDrop : MonoBehaviour
         RemoveHoldRestrictions();
     }
 
+    private void MoveBlockTowardsCursor(Vector3 hitPoint)
+    {
+        // Use two different methods to move block towards the cursor
+        if (isBlockFree)
+        {
+            // Use lerp when block is free - prevents block from overshooting the cursor
+            LerpBlockToCursor(hitPoint);
+        }
+        else
+        {
+            // Use force when block is colliding - simulates force interactions
+            ApplyForce(hitPoint);
+        }
+    }
+
+    private void ApplyForce(Vector3 hitPoint)
+    {
+        // Force scales with distance between cursor and object
+        Vector3 direction = (hitPoint + mouseOffset) - transform.position;
+        float distanceToTarget = direction.magnitude;
+
+        if (distanceToTarget > stopThreshold)
+        {
+            rb.AddForce(direction * forceStrength, ForceMode.Force);
+        }
+        else
+        {
+            rb.velocity = Vector3.zero;
+        }
+    }
+
+    private void LerpBlockToCursor(Vector3 hitPoint)
+    {
+        transform.position = Vector3.Lerp(transform.position, (hitPoint + mouseOffset), Time.deltaTime * lerpSpeed);
+    }
 
     private void ApplyHoldRestrictions()
     {
         rb.useGravity = false;
-        rb.mass = 10000;
+        rb.mass = 1;
         rb.velocity = Vector3.zero;
-        rb.constraints = RigidbodyConstraints.FreezeRotation;
+        rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotation;
         OnBlockHold?.Invoke();
     }
 
@@ -72,5 +113,22 @@ public class DragAndDrop : MonoBehaviour
         rb.mass = 1;
         rb.constraints = RigidbodyConstraints.None;
         OnBlockRelease?.Invoke();
+    }
+
+    void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Block"))
+        {
+            isBlockFree = false;
+        }
+    }
+
+    void OnCollisionExit(Collision collision)
+    {
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Block"))
+        {
+            isBlockFree = true;
+            rb.velocity = Vector3.zero;
+        }
     }
 }
