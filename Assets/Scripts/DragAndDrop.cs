@@ -4,7 +4,15 @@ public class DragAndDrop : MonoBehaviour
 {
     private Camera mainCamera;
     private Vector3 mouseOffset; // Offset between the mouse position and the object's center
+    private Plane xzPlane; // XZ plane with same Y value as the cursor hit point
     private Rigidbody rb;
+
+
+    public delegate void BlockHoldHandler();
+    public static BlockHoldHandler OnBlockHold;
+
+    public delegate void BlockReleaseHandler();
+    public static BlockReleaseHandler OnBlockRelease;
 
 
     void Start()
@@ -16,24 +24,25 @@ public class DragAndDrop : MonoBehaviour
 
     void OnMouseDown()
     {
-        // Create a ray from the camera to the mouse position
+        // Create ray from camera to mouse position
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        Plane xzPlane = new Plane(Vector3.up, transform.position);
-
-        if (xzPlane.Raycast(ray, out float enter))
+        if (Physics.Raycast(ray, out RaycastHit hitInfo))
         {
-            Vector3 hitPoint = ray.GetPoint(enter);
-            // Store the difference between the hit point and the object's world position
+            Vector3 hitPoint = hitInfo.point;
+
+            // Create XZ plane with same Y value as the hit point to simplify offset calculations 
+            xzPlane = new Plane(Vector3.up, hitPoint);
+            // Get offset between hit point and the object's position
             mouseOffset = transform.position - hitPoint;
             ApplyHoldRestrictions();
         }
+        
     }
 
     void OnMouseDrag()
     {
         // Create a ray from the camera to the mouse position
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        Plane xzPlane = new Plane(Vector3.up, transform.position);
 
         if (xzPlane.Raycast(ray, out float enter))
         {
@@ -44,7 +53,7 @@ public class DragAndDrop : MonoBehaviour
 
     private void OnMouseUp()
     {
-        RemoveHoldRestrictions();       
+        RemoveHoldRestrictions();
     }
 
 
@@ -54,6 +63,7 @@ public class DragAndDrop : MonoBehaviour
         rb.mass = 10000;
         rb.velocity = Vector3.zero;
         rb.constraints = RigidbodyConstraints.FreezeRotation;
+        OnBlockHold?.Invoke();
     }
 
     private void RemoveHoldRestrictions()
@@ -61,5 +71,6 @@ public class DragAndDrop : MonoBehaviour
         rb.useGravity = true;
         rb.mass = 1;
         rb.constraints = RigidbodyConstraints.None;
+        OnBlockRelease?.Invoke();
     }
 }
