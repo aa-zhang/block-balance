@@ -11,7 +11,6 @@ public class DragAndDrop : MonoBehaviour
     private bool isHeld = false;
 
     [SerializeField] private float forceStrength = 10f;
-    [SerializeField] private float stopThreshold = 5f;
     [SerializeField] private float lerpSpeed = 10f;
     
 
@@ -83,15 +82,7 @@ public class DragAndDrop : MonoBehaviour
         // Force scales with distance between cursor and object
         Vector3 direction = (hitPoint + mouseOffset) - transform.position;
         float distanceToTarget = direction.magnitude;
-
-        if (distanceToTarget > stopThreshold)
-        {
-            rb.AddForce(direction * forceStrength, ForceMode.Force);
-        }
-        else
-        {
-            rb.velocity = Vector3.zero;
-        }
+        rb.AddForce(direction * forceStrength, ForceMode.Force);
     }
 
     private void LerpBlockToCursor(Vector3 hitPoint)
@@ -102,7 +93,7 @@ public class DragAndDrop : MonoBehaviour
     private void ApplyHoldRestrictions()
     {
         rb.useGravity = false;
-        rb.mass = 1;
+        rb.mass = 1f;
         rb.velocity = Vector3.zero;
         rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotation;
         isHeld = true;
@@ -112,7 +103,7 @@ public class DragAndDrop : MonoBehaviour
     private void RemoveHoldRestrictions()
     {
         rb.useGravity = true;
-        rb.mass = 1;
+        rb.mass = 0.1f;
         rb.constraints = RigidbodyConstraints.None;
         isHeld = false;
         OnBlockRelease?.Invoke();
